@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Reader Monad</title>
+
+		<meta name="description" content="Slides for talk @ Scala Montreal March 2014">
+		<meta name="author" content="Alexandre Bergeron">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/solarized.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+<section><section id="reader-monad" class="titleslide slide level1"><h1>Reader Monad</h1></section><section id="reader-monad-1" class="slide level2">
+<h1>Reader Monad</h1>
+<p>Alexandre Bergeron Backend Developer <span class="citation" data-cites="Wajam">@Wajam</span> <span class="citation" data-cites="AlexBergeron2">@AlexBergeron2</span></p>
+<p>Scala Montreal March 26th, 2014</p>
+</section><section id="an-introduction" class="slide level2">
+<h1>An introduction</h1>
+<pre><code>def getUsers(): List[User] = {
+  val c = Database.getConnection()
+  try {
+    val rs = c.executeQuery(&quot;SELECT * FROM Users&quot;)
+    User.fromResultSet(rs)
+  } catch {
+    case t =&gt; Nil
+  } finally {
+    c.close()
+  }
+}</code></pre>
+</section><section id="extracting-connection-handling-logic" class="slide level2">
+<h1>Extracting connection handling logic</h1>
+<pre><code>def getUsers(c: Connection): List[User] = {
+  try {
+    val rs = c.executeQuery(&quot;SELECT * FROM Users&quot;)
+    User.fromResultSet(rs)
+  } catch {
+    case t =&gt; Nil
+  }
+}</code></pre>
+</section><section id="using-it" class="slide level2">
+<h1>Using it</h1>
+<pre><code>// Giving a user admin rights
+val c = Database.getConnection()
+try {
+  val u = getUserById(id, c)
+  updateUser(id, u.copy(rights = u.rights + Rights.Admin), c)
+} finally {
+  c.close()
+}</code></pre>
+</section><section id="dependency-injection-using-implicits" class="slide level2">
+<h1>Dependency injection using implicits</h1>
+<pre><code>implicit val c = Database.getConnection()
+try {
+  val u = getUserById(id)
+  updateUser(id, u.copy(rights = u.rights + Rights.Admin))
+} finally {
+  c.close()
+}</code></pre>
+</section><section id="ideal-solution" class="slide level2">
+<h1>Ideal solution</h1>
+<ul>
+<li>Easy to compose</li>
+<li>Could delay handling of connection as late as possible</li>
+<li>Avoids polluting the code with implicits</li>
+<li>Avoids complex dependency injection frameworks</li>
+</ul>
+</section><section id="contents" class="slide level2">
+<h1>Contents</h1>
+<ul>
+<li>What is a Monad</li>
+<li>What is a reader monad</li>
+<li>Use cases</li>
+</ul>
+</section></section>
+<section><section id="what-is-a-monad" class="titleslide slide level1"><h1>What is a Monad</h1></section><section id="tutorials-about-monads" class="slide level2">
+<h1>Tutorials about monads</h1>
+<p><img src="Monad-tutorials-chart.png" /> (Monads Tutorial timeline - http://www.haskell.org/haskellwiki/Monad_tutorials_timeline)</p>
+</section><section id="what-a-monad-is-not" class="slide level2">
+<h1>What a Monad is not</h1>
+<ul>
+<li>A burrito (http://blog.plover.com/prog/burritos.html)</li>
+<li>The most primal aspect of God in Gnosticism (http://en.wikipedia.org/wiki/Monad_(Gnosticism))</li>
+<li>Overly complex mathematical concept only Haskellers find usefull</li>
+</ul>
+</section><section id="youre-probably-already-using-monads" class="slide level2">
+<h1>You're (probably) already using Monads</h1>
+<ul>
+<li>(most) Collections, Option, Future</li>
+<li>Iteratees, Reactive Observables</li>
+<li>ScalaCheck Generator</li>
+<li>Anytime you're using for comprehensions, you're doing Monad composition</li>
+</ul>
+</section><section id="monads-in-scala" class="slide level2">
+<h1>Monads in Scala</h1>
+<p>(Simplified for the sake of this talk)</p>
+<ul>
+<li>A type M with a type parameter A</li>
+<li>Exposes</li>
+<li><code>map[B](f: A =&gt; B): M[B]</code></li>
+<li><code>flatMap[B](f: A =&gt; M[B]): M[B]</code></li>
+</ul>
+</section></section>
+<section><section id="reader-monad-2" class="titleslide slide level1"><h1>Reader Monad</h1></section><section id="basic-idea" class="slide level2">
+<h1>Basic Idea</h1>
+<ul>
+<li>Allows for composition of functions taking a parameter of the same type</li>
+<li></li>
+</ul>
+</section><section id="implementation" class="slide level2">
+<h1>Implementation</h1>
+<pre><code>case class Reader[C, A](private run: C =&gt; A) {
+  def apply(c: C): A = run(c)
+  def map[B](f: A =&gt; B): Reader[C, B] =
+    Reader(c =&gt; f(run(c)))
+  def flatMap[B](f: A =&gt; Reader[C, B]): Reader[C, B] = 
+    Reader(c =&gt; f(run(c))(c))
+}</code></pre>
+</section><section id="monadified-example" class="slide level2">
+<h1>Monadified example</h1>
+<pre><code>def grantAdmin(id: Int): Reader[Connection, Unit] = for {
+  u &lt;- getUserById(id)
+  r &lt;- updateUser(id, u.copy(rights = u.rights + Rights.Admin))
+} yield r
+
+grantAdmin(id)(Database.getConnection())</code></pre>
+<ul>
+<li>Composable</li>
+<li>Explicit dependency</li>
+<li>Avoids polluting the implicit namespace</li>
+<li>Framework-less</li>
+<li>Data-flow driven</li>
+</ul>
+</section><section id="possible-problems" class="slide level2">
+<h1>Possible problems</h1>
+<ul>
+<li>Composing with other Monads is difficult</li>
+<li>See Monad Transformers</li>
+<li>Composition requires for comprehensions or flatMapping - Losing simple functions</li>
+<li></li>
+</ul>
+</section></section>
+<section><section id="other-use-cases" class="titleslide slide level1"><h1>Other use cases</h1></section></section>
+<section><section id="more-about-reader-monads" class="titleslide slide level1"><h1>More about Reader Monads</h1></section></section>
+<section><section id="questions" class="titleslide slide level1"><h1>Questions?</h1></section></section>
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: false,
+				progress: false,
+				slideNumber: true,
+				history: true,
+				center: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: 'fade', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
