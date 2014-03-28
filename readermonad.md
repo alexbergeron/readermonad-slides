@@ -1,10 +1,14 @@
 # Reader Monad
 ## Reader Monad
 Alexandre Bergeron
+
 Backend Developer @Wajam
+
 @AlexBergeron2
 
+
 Scala Montreal
+
 March 26th, 2014
 
 ## An introduction
@@ -62,8 +66,12 @@ March 26th, 2014
 
 # What is a Monad
 ## Tutorials about monads
-![](Monad-tutorials-chart.png)
-(Monads Tutorial timeline - http://www.haskell.org/haskellwiki/Monad_tutorials_timeline)
+- There are way too many Monads tutorials available
+- Don't take this talk as a good formal introduction to Monads
+
+![Monads tutorials chart](Monad-tutorials-chart.png)
+
+(Monads Tutorial timeline - [http://www.haskell.org/haskellwiki/Monad_tutorials_timeline](http://www.haskell.org/haskellwiki/Monad_tutorials_timeline))
 
 ## What a Monad is not
 - A burrito (http://blog.plover.com/prog/burritos.html)
@@ -87,7 +95,7 @@ March 26th, 2014
 # Reader Monad
 ## Basic Idea
 - Allows for composition of functions taking a parameter of the same type
-- 
+- It's basically just a function taking one parameter E and returning A
 
 ## Implementation
     case class Reader[C, A](private run: C => A) {
@@ -113,17 +121,27 @@ March 26th, 2014
 - Data-flow driven
 
 ## Possible problems
+- Style not as familiar (to some) as traditional OO Code
 - Composing with other Monads is difficult
-  - See Monad Transformers
+    - See Monad Transformers
 - Composition requires for comprehensions or flatMapping - Losing simple functions
-- 
 
-# Other use cases
-- ???
+# Use cases
+## Use cases
+- Passing a common configuration to your code
+- Inversion of control
+- Simple Dependency injection
+- Implementing interpreters
 
 # More about Reader Monads
-(Link to Runar's talk)
+## More about Reader Monads
+- Dead-Simple Dependency Injection by Rúnar Óli Bjarnason - https://www.youtube.com/watch?v=ZasXwtTRkio
+- Reader Monad Purpose - http://stackoverflow.com/questions/14178889/reader-monad-purpose
+- Reading your Future by Dan Rosen - http://mergeconflict.com/reading-your-future/
+- learning Scalaz - Reader by Eugene Yokota - http://eed3si9n.com/learning-scalaz/Reader.html
 
 # Questions?
+## Questions?
 Thanks for listening
+
 Made with Pandoc, Markdown and reveal.js

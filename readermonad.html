@@ -36,12 +36,15 @@
 
 			<!-- Any section element inside of this container is displayed as a slide -->
 			<div class="slides">
-<section><section id="reader-monad" class="titleslide slide level1"><h1>Reader Monad</h1></section><section id="reader-monad-1" class="slide level2">
+<section id="reader-monad" class="titleslide slide level1">
 <h1>Reader Monad</h1>
-<p>Alexandre Bergeron Backend Developer <span class="citation" data-cites="Wajam">@Wajam</span> <span class="citation" data-cites="AlexBergeron2">@AlexBergeron2</span></p>
-<p>Scala Montreal March 26th, 2014</p>
+<p>Alexandre Bergeron</p>
+<p>Backend Developer <span class="citation" data-cites="Wajam">@Wajam</span></p>
+<p><span class="citation" data-cites="AlexBergeron2">@AlexBergeron2</span></p>
+<p>Scala Montreal</p>
+<p>March 26th, 2014</p>
 </section><section id="an-introduction" class="slide level2">
-<h1>An introduction</h1>
+<h2>An introduction</h2>
 <pre><code>def getUsers(): List[User] = {
   val c = Database.getConnection()
   try {
@@ -54,7 +57,7 @@
   }
 }</code></pre>
 </section><section id="extracting-connection-handling-logic" class="slide level2">
-<h1>Extracting connection handling logic</h1>
+<h2>Extracting connection handling logic</h2>
 <pre><code>def getUsers(c: Connection): List[User] = {
   try {
     val rs = c.executeQuery(&quot;SELECT * FROM Users&quot;)
@@ -64,7 +67,7 @@
   }
 }</code></pre>
 </section><section id="using-it" class="slide level2">
-<h1>Using it</h1>
+<h2>Using it</h2>
 <pre><code>// Giving a user admin rights
 val c = Database.getConnection()
 try {
@@ -74,7 +77,7 @@ try {
   c.close()
 }</code></pre>
 </section><section id="dependency-injection-using-implicits" class="slide level2">
-<h1>Dependency injection using implicits</h1>
+<h2>Dependency injection using implicits</h2>
 <pre><code>implicit val c = Database.getConnection()
 try {
   val u = getUserById(id)
@@ -83,7 +86,7 @@ try {
   c.close()
 }</code></pre>
 </section><section id="ideal-solution" class="slide level2">
-<h1>Ideal solution</h1>
+<h2>Ideal solution</h2>
 <ul>
 <li>Easy to compose</li>
 <li>Could delay handling of connection as late as possible</li>
@@ -91,49 +94,55 @@ try {
 <li>Avoids complex dependency injection frameworks</li>
 </ul>
 </section><section id="contents" class="slide level2">
-<h1>Contents</h1>
+<h2>Contents</h2>
 <ul>
 <li>What is a Monad</li>
 <li>What is a reader monad</li>
 <li>Use cases</li>
 </ul>
-</section></section>
+</section>
 <section><section id="what-is-a-monad" class="titleslide slide level1"><h1>What is a Monad</h1></section><section id="tutorials-about-monads" class="slide level2">
-<h1>Tutorials about monads</h1>
-<p><img src="Monad-tutorials-chart.png" /> (Monads Tutorial timeline - http://www.haskell.org/haskellwiki/Monad_tutorials_timeline)</p>
-</section><section id="what-a-monad-is-not" class="slide level2">
-<h1>What a Monad is not</h1>
+<h2>Tutorials about monads</h2>
 <ul>
-<li>A burrito (http://blog.plover.com/prog/burritos.html)</li>
-<li>The most primal aspect of God in Gnosticism (http://en.wikipedia.org/wiki/Monad_(Gnosticism))</li>
-<li>Overly complex mathematical concept only Haskellers find usefull</li>
+<li>There are way too many Monads tutorials available</li>
+<li>Don't take this talk as a good formal introduction to Monads</li>
+</ul>
+<figure>
+<img src="Monad-tutorials-chart.png" alt="Monads tutorials chart" /><figcaption>Monads tutorials chart</figcaption>
+</figure>
+<p>(Monads Tutorial timeline - <a href="http://www.haskell.org/haskellwiki/Monad_tutorials_timeline">http://www.haskell.org/haskellwiki/Monad_tutorials_timeline</a>)</p>
+</section><section id="what-a-monad-is-not" class="slide level2">
+<h2>What a Monad is not</h2>
+<ul>
+<li class="fragment">A burrito (http://blog.plover.com/prog/burritos.html)</li>
+<li class="fragment">The most primal aspect of God in Gnosticism (http://en.wikipedia.org/wiki/Monad_(Gnosticism))</li>
+<li class="fragment">Overly complex mathematical concept only Haskellers find usefull</li>
 </ul>
 </section><section id="youre-probably-already-using-monads" class="slide level2">
-<h1>You're (probably) already using Monads</h1>
+<h2>You're (probably) already using Monads</h2>
 <ul>
-<li>(most) Collections, Option, Future</li>
-<li>Iteratees, Reactive Observables</li>
-<li>ScalaCheck Generator</li>
-<li>Anytime you're using for comprehensions, you're doing Monad composition</li>
+<li class="fragment">(most) Collections, Option, Future</li>
+<li class="fragment">Iteratees, Reactive Observables</li>
+<li class="fragment">ScalaCheck Generator</li>
+<li class="fragment">Anytime you're using for comprehensions, you're doing Monad composition</li>
 </ul>
 </section><section id="monads-in-scala" class="slide level2">
-<h1>Monads in Scala</h1>
+<h2>Monads in Scala</h2>
 <p>(Simplified for the sake of this talk)</p>
 <ul>
-<li>A type M with a type parameter A</li>
-<li>Exposes</li>
-<li><code>map[B](f: A =&gt; B): M[B]</code></li>
-<li><code>flatMap[B](f: A =&gt; M[B]): M[B]</code></li>
+<li class="fragment">A type M with a type parameter A</li>
+<li class="fragment">Exposes</li>
+<li class="fragment"><code>map[B](f: A =&gt; B): M[B]</code></li>
+<li class="fragment"><code>flatMap[B](f: A =&gt; M[B]): M[B]</code></li>
 </ul>
 </section></section>
 <section><section id="reader-monad-2" class="titleslide slide level1"><h1>Reader Monad</h1></section><section id="basic-idea" class="slide level2">
-<h1>Basic Idea</h1>
+<h2>Basic Idea</h2>
 <ul>
 <li>Allows for composition of functions taking a parameter of the same type</li>
-<li></li>
 </ul>
 </section><section id="implementation" class="slide level2">
-<h1>Implementation</h1>
+<h2>Implementation</h2>
 <pre><code>case class Reader[C, A](private run: C =&gt; A) {
   def apply(c: C): A = run(c)
   def map[B](f: A =&gt; B): Reader[C, B] =
@@ -142,32 +151,61 @@ try {
     Reader(c =&gt; f(run(c))(c))
 }</code></pre>
 </section><section id="monadified-example" class="slide level2">
-<h1>Monadified example</h1>
-<pre><code>def grantAdmin(id: Int): Reader[Connection, Unit] = for {
+<h2>Monadified example</h2>
+<pre><code>def getUsers = Reader[Connection, List[User]](c => try {
+  val rs = c.executeQuery("SELECT * FROM Users")
+  User.fromResultSet(rs)
+} catch {
+  case t => Nil
+})
+
+def grantAdmin(id: Int): Reader[Connection, Unit] = for {
   u &lt;- getUserById(id)
   r &lt;- updateUser(id, u.copy(rights = u.rights + Rights.Admin))
 } yield r
 
 grantAdmin(id)(Database.getConnection())</code></pre>
 <ul>
-<li>Composable</li>
-<li>Explicit dependency</li>
-<li>Avoids polluting the implicit namespace</li>
-<li>Framework-less</li>
-<li>Data-flow driven</li>
+<li class="fragment">Composable</li>
+<li class="fragment">Explicit dependency</li>
+<li class="fragment">Avoids polluting the implicit namespace</li>
+<li class="fragment">Framework-less</li>
+<li class="fragment">Data-flow driven</li>
 </ul>
 </section><section id="possible-problems" class="slide level2">
-<h1>Possible problems</h1>
+<h2>Possible problems</h2>
 <ul>
-<li>Composing with other Monads is difficult</li>
-<li>See Monad Transformers</li>
-<li>Composition requires for comprehensions or flatMapping - Losing simple functions</li>
-<li></li>
+<li class="fragment">Style not as familiar (to some) as traditional OO Code</li>
+<li class="fragment">Composing with other Monads is difficult
+<ul>
+<li class="fragment">See Monad Transformers</li>
+</ul></li>
+<li class="fragment">Composition requires for comprehensions or flatMapping - Losing simple functions</li>
 </ul>
 </section></section>
-<section><section id="other-use-cases" class="titleslide slide level1"><h1>Other use cases</h1></section></section>
-<section><section id="more-about-reader-monads" class="titleslide slide level1"><h1>More about Reader Monads</h1></section></section>
-<section><section id="questions" class="titleslide slide level1"><h1>Questions?</h1></section></section>
+<section id="use-cases" class="slide level1">
+<h2>Use cases</h2>
+<ul>
+<li class="fragment">Passing a common configuration to your code</li>
+<li class="fragment">Inversion of control</li>
+<li class="fragment">Simple Dependency injection</li>
+<li class="fragment">Implementing interpreters</li>
+</ul>
+</section>
+<section id="more-about-reader-monads" class="slide level1">
+<h2>More about Reader Monads</h2>
+<ul>
+<li>Dead-Simple Dependency Injection by Rúnar Óli Bjarnason - https://www.youtube.com/watch?v=ZasXwtTRkio</li>
+<li>Reader Monad Purpose - http://stackoverflow.com/questions/14178889/reader-monad-purpose</li>
+<li>Reading your Future by Dan Rosen - http://mergeconflict.com/reading-your-future/</li>
+<li>learning Scalaz - Reader by Eugene Yokota - http://eed3si9n.com/learning-scalaz/Reader.html</li>
+</ul>
+</section>
+<section id="questions" class="titleslide slide level1">
+<h1>Questions?</h1>
+<p>Thanks for listening</p>
+<p>Made with Pandoc, Markdown and reveal.js</p>
+</section>
 			</div>
 
 		</div>
@@ -196,11 +234,7 @@ grantAdmin(id)(Database.getConnection())</code></pre>
 				// Optional libraries used to extend on reveal.js
 				dependencies: [
 					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
-					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
-					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
 					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
-					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
-					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
 				]
 			});
 
